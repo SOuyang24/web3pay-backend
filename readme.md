@@ -9,7 +9,7 @@
 ## Setup
 ```sh
 yarn install
-node index.js
+yarn start
 # test
 http://localhost:3001/getNameAndBalance?userAddress=your_address_in_meta_mask
 ```
