@@ -10,4 +10,6 @@
 ```sh
 yarn install
 node index.js
+# test
+http://localhost:3001/getNameAndBalance?userAddress=your_address_in_meta_mask
 ```
