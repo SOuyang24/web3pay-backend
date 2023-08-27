@@ -25,6 +25,10 @@ function convertArrayToObjects(arr) {
     return dataArray.reverse()
 }
 
+app.get('/', (req, res) => {
+    return res.status(200).json({"message": "web service is deployed successfully."})
+})
+
 app.get('/getNameAndBalance', async (req, res) => {
     const { userAddress } = req.query
 
