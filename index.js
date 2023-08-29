@@ -30,9 +30,9 @@ app.get('/', (req, res) => {
 })
 
 app.get('/getNameAndBalance', async (req, res) => {
-    const { userAddress } = req.query
-
-    const response = await Moralis.EvmApi.utils.runContractFunction({
+    const { userAddress } = req.query;
+    try {
+    const promiseName = Moralis.EvmApi.utils.runContractFunction({
         chain: process.env.CHAIN_ID,
         address: process.env.SMART_CONTRACT_ADDRESS,
         functionName: 'getMyName',
@@ -40,24 +40,24 @@ app.get('/getNameAndBalance', async (req, res) => {
         params: { _user: userAddress },
     })
 
-    const jsonResponseName = response.raw
+    // 
 
-    const secResponse = await Moralis.EvmApi.balance.getNativeBalance({
+    const promiseBalance =  Moralis.EvmApi.balance.getNativeBalance({
         chain: process.env.CHAIN_ID,
         address: userAddress,
     })
 
-    const jsonResponseBal = (secResponse.raw.balance / 1e18).toFixed(2)
+    //const jsonResponseBal = (secResponse.raw.balance / 1e18).toFixed(2)
 
-    const thirResponse = await Moralis.EvmApi.token.getTokenPrice({
-        address: '0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0',
+    const promisePrice = Moralis.EvmApi.token.getTokenPrice({
+        address:  process.env.CHECK_TOKEN_PRICE_SMART_CONTRACT_ADDRESS,
     })
 
-    const jsonResponseDollars = (
-        thirResponse.raw.usdPrice * jsonResponseBal
-    ).toFixed(2)
+    // const jsonResponseDollars = (
+    //     thirdResponse.raw.usdPrice * jsonResponseBal
+    // ).toFixed(2)
 
-    const fourResponse = await Moralis.EvmApi.utils.runContractFunction({
+    const promiseHistory = Moralis.EvmApi.utils.runContractFunction({
         chain: process.env.CHAIN_ID,
         address: process.env.SMART_CONTRACT_ADDRESS,
         functionName: 'getMyHistory',
@@ -65,9 +65,7 @@ app.get('/getNameAndBalance', async (req, res) => {
         params: { _user: userAddress },
     })
 
-    const jsonResponseHistory = convertArrayToObjects(fourResponse.raw)
-
-    const fiveResponse = await Moralis.EvmApi.utils.runContractFunction({
+    const promiseRequests  = Moralis.EvmApi.utils.runContractFunction({
         chain: process.env.CHAIN_ID,
         address: process.env.SMART_CONTRACT_ADDRESS,
         functionName: 'getMyRequests',
@@ -75,23 +73,33 @@ app.get('/getNameAndBalance', async (req, res) => {
         params: { _user: userAddress },
     })
 
-    const jsonResponseRequests = fiveResponse.raw
-
+    const [responseName, responseBalance, responsePrice, responseHistory, responseRequests] = await Promise.all([promiseName, promiseBalance, promisePrice, promiseHistory, promiseRequests])
+    const jsonResponseName = responseName.raw
+    const jsonResponseBalance = (responseBalance.raw.balance / 1e18).toFixed(2)
+    const jsonResponseDollars = (
+        responsePrice.raw.usdPrice * jsonResponseBalance
+     ).toFixed(2);
+    const jsonResponseHistory = convertArrayToObjects(responseHistory.raw);
+    const jsonResponseRequests = responseRequests.raw;
     const jsonResponse = {
         name: jsonResponseName,
-        balance: jsonResponseBal,
+        balance: jsonResponseBalance,
         dollars: jsonResponseDollars,
         history: jsonResponseHistory,
         requests: jsonResponseRequests,
     }
-
     return res.status(200).json(jsonResponse)
+    }
+    catch(e) {
+        return res.status(500).json({errorMessage: e.message});
+    }
 })
 
 Moralis.start({
     apiKey: process.env.MORALIS_KEY,
 }).then(() => {
     app.listen(port, () => {
+        /* eslint-disable */
         console.log(`Listening for API Calls`)
     })
 })
